@@ -87,9 +87,13 @@ data PState = PState { pLevel     :: Int
 data Indent = Spaces Int | Tab
 
 data NumberFormat
+  -- | The standard behaviour of the 'Aeson.encode' function. Behaves
+  --   like 'Generic' for fractional values, but prints integers
+  --   as actual integers (without a @.0@ suffix).
+  = AesonNum
   -- | Use decimal notation for values between 0.1 and 9,999,999, and scientific
   --   notation otherwise.
-  = Generic
+  | Generic
   -- | Scientific notation (e.g. 2.3e123).
   | Scientific
   -- | Standard decimal notation
@@ -121,7 +125,7 @@ keyOrder ks = comparing $ \k -> fromMaybe maxBound (elemIndex k ks)
 --  > defConfig = Config { confIndent = 4, confCompare = mempty, confNumFormat = Generic }
 defConfig :: Config
 defConfig =
-  Config {confIndent = Spaces 4, confCompare = mempty, confNumFormat = Generic}
+  Config {confIndent = Spaces 4, confCompare = mempty, confNumFormat = AesonNum}
 
 -- |A drop-in replacement for aeson's 'Aeson.encode' function, producing
 --  JSON-ByteStrings for human readers.
@@ -199,3 +203,4 @@ fromNumber st x = case pNumFormat st of
   Scientific -> formatScientificBuilder S.Exponent Nothing x
   Decimal    -> formatScientificBuilder S.Fixed Nothing x
   Custom f   -> f x
+  AesonNum   -> Aeson.encodeToTextBuilder $ Number x
